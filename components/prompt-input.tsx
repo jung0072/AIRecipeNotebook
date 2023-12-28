@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { BlockNoteEditor, PartialBlock, Block } from "@blocknote/core";
 
-import {modifyRecipe} from "@/lib/modify-recipe"
+import { modifyRecipe } from "@/lib/modify-recipe";
 
 const FormSchema = z.object({
   prompt: z.string(),
@@ -34,13 +34,21 @@ export function PromptInput({ onChange, editor }: ImportDocumentProps) {
     },
   });
 
-
   const document = editor.topLevelBlocks
-    .map((block) => block.content[0]?.text)
+    .map((block) => {
+      if (
+        block.content &&
+        block.content[0] &&
+        block.content[0].type != "link" &&
+        block.content[0].text
+      ) {
+        return block.content[0].text;
+      }
+    })
     .join(" ");
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    modifyRecipe(data, document)
+    modifyRecipe(data.prompt, document)
       .then((response) => {
         if (response.error) {
           console.error("Error in response:", response.error);
