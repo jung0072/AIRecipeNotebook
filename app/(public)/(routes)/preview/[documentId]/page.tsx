@@ -27,12 +27,16 @@ const DocumentIdPage = ({
 
   const update = useMutation(api.documents.update);
 
-  const onChange = (content: string) => {
-    update({
-      id: params.documentId,
-      content
-    });
-  };
+ const onChange = (content?: string, title?: string) => {
+   if (content === undefined) {
+     // Handle the case where content is undefined
+     return;
+   }
+   update({
+     id: params.documentId,
+     content,
+   });
+ };
 
   if (document === undefined) {
     return (
@@ -54,7 +58,7 @@ const DocumentIdPage = ({
     return <div>Not found</div>
   }
 
-  return ( 
+  return (
     <div className="pb-40">
       <Cover preview url={document.coverImage} />
       <div className="md:max-w-3xl lg:max-w-4xl mx-auto">
@@ -62,7 +66,7 @@ const DocumentIdPage = ({
         <Editor
           editable={false}
           onChange={onChange}
-          initialContent={document.content}
+          initialData={document}
         />
       </div>
     </div>
