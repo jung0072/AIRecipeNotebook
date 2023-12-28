@@ -58,7 +58,7 @@ const Editor = ({ onChange, initialData, editable }: EditorProps) => {
         editor={editor}
         theme={resolvedTheme === "dark" ? "dark" : "light"}
       ></BlockNoteView>
-      <AskAIButton editor={editor} title={title} />
+      <AskAIButton onChange={onChange} editor={editor} title={title} />
     </div>
   );
 };

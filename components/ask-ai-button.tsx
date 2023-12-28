@@ -54,13 +54,12 @@ export function AskAIButton({
         recognition.start();
       });
     }
-  }, [isClicked, speechRecBtnRef.current]);
+  }, [isClicked, recognition]);
 
   function handleAcceptBtnClick() {
     matchedBlockIds.forEach((matchedBlockId, index) => {
       const block = editor.getBlock(matchedBlockId);
-      if (block) {
-        console.log(block.content[0].text, " -> ", modifiedRecipe[index]);
+      if (block && block.content && block.content[0].type === "text") {
         editor.updateBlock(matchedBlockId, {
           content: [
             {
@@ -90,18 +89,15 @@ export function AskAIButton({
 
     const response = await generateImage(topLvBlocksMarkdown);
 
-    let imageBlock = [
-      {
-        type: "image",
-        props: {
-          url: response.url,
-        },
-        content: [],
-        children: [],
-      },
-    ];
-    editor.insertBlocks(imageBlock, topLvBlocks[0].id, "before");
-
+    // let imageBlock = [{ type: "image", props: { url: response.url } }];
+    // editor.insertBlocks(imageBlock, topLvBlocks[0].id, "before");
+    
+    editor.insertBlocks(
+      [{ type: "image", props: { url: response.url } }],
+      topLvBlocks[0].id,
+      "before"
+    );
+    
     setIsLoading(false);
   }
 
@@ -149,6 +145,7 @@ export function AskAIButton({
             if (
               block.content &&
               block.content[0] &&
+              block.content[0].type != "link" &&
               block.content[0].text &&
               block.content[0].text.trim() === selected_part.trim()
             ) {
