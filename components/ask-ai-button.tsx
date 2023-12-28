@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 
-import { BlockNoteEditor, Block } from "@blocknote/core";
+import { BlockNoteEditor, Block, PartialBlock } from "@blocknote/core";
 import { Button } from "../components/ui/button";
 
 import { modifyRecipe } from "@/lib/modify-recipe";
+import { generateImage } from "@/lib/generate-image";
 import { FaMicrophone } from "react-icons/fa";
 import { Spinner } from "@/components/spinner";
 
 interface AskAIButtonProps {
   onChange: (content?: string, title?: string) => void;
   editor: BlockNoteEditor;
-  initialContent?: string;
+  title?: string;
 }
 declare global {
   interface Window {
@@ -22,12 +23,15 @@ declare global {
 export function AskAIButton({
   onChange: onChange,
   editor,
-  initialContent,
+  title,
 }: AskAIButtonProps) {
   const [isClicked, setIsClicked] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const speechRecBtnRef = useRef<HTMLButtonElement>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [matchedBlockIds, setMatchedBlockIds] = useState<string[]>([]);
+  const [modifiedRecipe, setModifiedRecipe] = useState<string[]>([]);
+  const [confirmModal, setConfirmModal] = useState<boolean>(false);
 
   const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -50,57 +54,112 @@ export function AskAIButton({
         recognition.start();
       });
     }
-  }, [isClicked]);
+  }, [isClicked, speechRecBtnRef.current]);
+
+  function handleAcceptBtnClick() {
+    matchedBlockIds.forEach((matchedBlockId, index) => {
+      const block = editor.getBlock(matchedBlockId);
+      if (block) {
+        console.log(block.content[0].text, " -> ", modifiedRecipe[index]);
+        editor.updateBlock(matchedBlockId, {
+          content: [
+            {
+              type: "text",
+              text: modifiedRecipe[index],
+              styles: block.content[0].styles,
+            },
+          ],
+          props: { backgroundColor: "default" },
+        });
+        setIsClicked(false);
+      }
+    });
+
+    setConfirmModal(false);
+  }
+
+  function handleCancelBtnClick() {
+    setIsClicked(false);
+  }
+
+  async function handleAddImagesBtnClick() {
+    setIsLoading(true);
+
+    const topLvBlocks = editor.topLevelBlocks;
+    const topLvBlocksMarkdown = await editor.blocksToMarkdown(topLvBlocks);
+
+    const response = await generateImage(topLvBlocksMarkdown);
+
+    let imageBlock = [
+      {
+        type: "image",
+        props: {
+          url: response.url,
+        },
+        content: [],
+        children: [],
+      },
+    ];
+    editor.insertBlocks(imageBlock, topLvBlocks[0].id, "before");
+
+    setIsLoading(false);
+  }
 
   async function handleAIBtnClick() {
     console.log("handleAIBtnClick");
-    let inputPrompt = "";
+    let inputPrompt = "Change the total yield to 3 servings";
 
-    if (inputRef.current) {
+    if (inputRef.current && inputRef.current.value !== "") {
       console.log(inputRef.current.value);
       inputPrompt = inputRef.current.value;
     }
 
+    let blocksToModify: Block[];
     const selection = editor.getSelection();
-    if (!selection) {
-      console.error("No selection");
-      return;
+    if (selection) {
+      blocksToModify = selection!.blocks;
+    } else {
+      blocksToModify = editor.topLevelBlocks;
     }
 
-    const selectedBlocks = selection.blocks;
-    const selectedBlocksMarkdown = await editor.blocksToMarkdown(
-      selectedBlocks
-    );
-    console.log(
-      "AI button clicked\n Prpmpt: ",
-      inputPrompt,
-      "\nselectedBlocks: \n",
-      selectedBlocksMarkdown
-    );
+    // Remove blocks that are not text which are empty in content
+    blocksToModify = blocksToModify.filter(
+      (block) => block.content != undefined
+    ) as Block[];
+
+    const markdownToModify = await editor.blocksToMarkdown(blocksToModify);
 
     setIsLoading(true);
-    modifyRecipe(inputPrompt, selectedBlocksMarkdown)
+
+    modifyRecipe(inputPrompt, markdownToModify)
       .then(async (response: any) => {
         if (response.error) {
           console.error("Error in response:", response.error);
           return;
         }
-        console.log("Response:", response.data);
-        const blocks: Block[] = await editor.markdownToBlocks(response.data);
+        console.log("Response from modifyRecipe API:", response.data);
 
-        selectedBlocks.forEach((block, index) => {
-          block.content?.forEach((inlineContent) => {
+        setModifiedRecipe(response.data.modified_recipe);
+        const selected_parts = response.data.selected_parts;
+
+        let matchedBlockIds_buffer: string[] = [];
+
+        selected_parts.forEach((selected_part: string) => {
+          editor.topLevelBlocks.forEach((block) => {
             if (
-              inlineContent.type !== "text" ||
-              !/\s*\*\s*/.test(inlineContent.text)
+              block.content &&
+              block.content[0] &&
+              block.content[0].text &&
+              block.content[0].text.trim() === selected_part.trim()
             ) {
-              return;
+              editor.updateBlock(block.id, {
+                props: { backgroundColor: "blue" },
+              });
+              matchedBlockIds_buffer.push(block.id);
             }
           });
-
-          let blockIdentifier = block.id;
-          editor.updateBlock(blockIdentifier, blocks[index]);
         });
+        setMatchedBlockIds(matchedBlockIds_buffer);
       })
       .catch((error: any) => {
         console.log(error);
@@ -108,6 +167,7 @@ export function AskAIButton({
       .finally(() => {
         // Set isLoading back to false when the request finishes
         setIsLoading(false);
+        setConfirmModal(true);
       });
   }
 
@@ -149,7 +209,19 @@ export function AskAIButton({
           >
             <FaMicrophone />
           </Button>
-          <Button onClick={handleAIBtnClick}>Enter</Button>
+          {confirmModal ? (
+            <Button onClick={handleAcceptBtnClick}>Accept</Button>
+          ) : (
+            <div className="flex gap-3">
+              <Button onClick={handleAIBtnClick}>Enter</Button>
+              <Button variant="destructive" onClick={handleCancelBtnClick}>
+                Cancel
+              </Button>
+              <Button variant="outline" onClick={handleAddImagesBtnClick}>
+                Add Images
+              </Button>
+            </div>
+          )}
         </div>
       ) : (
         <Button onClick={() => setIsClicked(true)}>AI Sous Chef</Button>

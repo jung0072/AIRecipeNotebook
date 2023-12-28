@@ -1,33 +1,30 @@
 "use client";
 
-import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import { BlockNoteEditor, PartialBlock } from "@blocknote/core";
 import {
   BlockNoteView,
   useBlockNote,
-  HyperlinkToolbarPositioner,
-  ImageToolbarPositioner,
-  SlashMenuPositioner,
-  SideMenuPositioner,
-  FormattingToolbarPositioner,
 } from "@blocknote/react";
 
 import "@blocknote/core/style.css";
 
+import { Doc } from "@/convex/_generated/dataModel";
+
 import { ImportDocument } from "@/components/import-document";
-import { PromptInput } from "@/components/prompt-input";
 import { AskAIButton } from "@/components/ask-ai-button";
 
 import { useEdgeStore } from "@/lib/edgestore";
 
 interface EditorProps {
   onChange: (content?: string, title?: string) => void;
-  initialContent?: string;
+  initialData?: Doc<"documents">;
   editable?: boolean;
 }
 
-const Editor = ({ onChange, initialContent, editable }: EditorProps) => {
+const Editor = ({ onChange, initialData, editable }: EditorProps) => {
+  const initialContent = initialData?.content;
+  const title = initialData?.title;
   const { resolvedTheme } = useTheme();
   const { edgestore } = useEdgeStore();
 
@@ -50,18 +47,6 @@ const Editor = ({ onChange, initialContent, editable }: EditorProps) => {
     uploadFile: handleUpload,
   });
 
-  const handleButtonClick = () => {
-    console.log("hi");
-  };
-
-  const sideMenu = () => {
-    return (
-      <div className="flex flex-col">
-        <button>GPT</button>
-      </div>
-    );
-  };
-
   return (
     <div>
       <ImportDocument
@@ -69,12 +54,11 @@ const Editor = ({ onChange, initialContent, editable }: EditorProps) => {
         editor={editor}
         initialContent={initialContent}
       />
-      <PromptInput onChange={onChange} editor={editor} />
       <BlockNoteView
         editor={editor}
         theme={resolvedTheme === "dark" ? "dark" : "light"}
       ></BlockNoteView>
-      <AskAIButton editor={editor} />
+      <AskAIButton editor={editor} title={title} />
     </div>
   );
 };

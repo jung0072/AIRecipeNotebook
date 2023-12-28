@@ -19,7 +19,9 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input"; 
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/spinner";
+
 
 const FormSchema = z.object({
   url: z.string().url({
@@ -38,6 +40,7 @@ export function ImportDocument({
   editor,
   initialContent,
 }: ImportDocumentProps) {
+  const [isLoading, setIsLoading] = useState(false);
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -54,17 +57,17 @@ export function ImportDocument({
   const getBlocks = async (content: string) => {
     console.log("Get Block and insert");
     console.log(content);
-    content = content
-      .replace("```markdown\n", "m")
-      .replace("\n```", "")
-      .replace("---\n", "")
-      .replaceAll("**", "")
-      .replaceAll("#", "")
-      .replaceAll(":", "")
-      .replace(/(?<!#)[Tt]otal [Yy]ield(:?\b)/, "### Total Yield")
-      .replace(/(?<!#)[Dd]escription:?\b/, "## Description\n")
-      .replace(/(?<!#)[Ii]ngredients:?\b/, "## Ingredients\n")
-      .replace(/(?<!#)[Ii]nstructions:?\b/, "## Instructions\n");
+    // content = content
+    //   .replace("```markdown\n", "m")
+    //   .replace("\n```", "")
+    //   .replace("---\n", "")
+    //   .replaceAll("**", "")
+    //   .replaceAll("#", "")
+    //   .replaceAll(":", "")
+    //   .replace(/(?<!#)[Tt]otal [Yy]ield(:?\b)/, "### Total Yield")
+    //   .replace(/(?<!#)[Dd]escription:?\b/, "## Description\n")
+    //   .replace(/(?<!#)[Ii]ngredients:?\b/, "## Ingredients\n")
+    //   .replace(/(?<!#)[Ii]nstructions:?\b/, "## Instructions\n");
 
     let title = content.slice(0, content.indexOf("\n"));
     title = title
@@ -75,14 +78,14 @@ export function ImportDocument({
 
     content = content.substring(content.indexOf("\n") + 1);
 
-    console.log("<><><><><><><><><><><>content: ", content);
-
     const blocks: Block[] = await editor.markdownToBlocks(content);
     editor.insertBlocks(blocks, editor.topLevelBlocks[0], "before");
     onChange(JSON.stringify(editor.topLevelBlocks, null, 2), title);
   };
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
+    setIsLoading(true);
+
     generateRecipe(data)
       .then((response) => {
         if (response.error) {
@@ -90,9 +93,11 @@ export function ImportDocument({
           return;
         }
         getBlocks(response.data);
+        setIsLoading(false);
       })
       .catch((error: any) => {
         console.log(error);
+        setIsLoading(false);
       });
   }
 
@@ -112,8 +117,8 @@ export function ImportDocument({
                 <FormControl>
                   <div className="flex gap-3">
                     <Input placeholder="URL" {...field} />
-                    <Button type="submit" size="default">
-                      Import
+                    <Button type="submit" size="default" disabled={isLoading}>
+                      {isLoading ? <Spinner /> : "Import"}
                     </Button>
                   </div>
                 </FormControl>
