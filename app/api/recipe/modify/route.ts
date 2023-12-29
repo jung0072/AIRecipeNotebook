@@ -206,7 +206,7 @@ export async function POST(req: Request) {
   const { promptMessage, document } = await req.json();
   
   try {
-    const completion: any = await sequentialChain.call({
+    const completion: any =  sequentialChain.call({
       format_instructions: outputFixingParser.getFormatInstructions(),
       recipe_document: document,
       promptMessage: promptMessage,
@@ -214,7 +214,7 @@ export async function POST(req: Request) {
       selected_parts_string: transformChain.outputVariables,
       modified_recipe: llmChain2.outputKey,
     });
-    console.log(">>> completion", completion);
+    // console.log(">>> completion", completion);
     calculateCost(totalInputTokens, totalOutputTokens);
     return new Response(JSON.stringify({ data: completion }), {
       status: 200,

@@ -19,7 +19,8 @@ export const generateRecipe = async (
       },
       body: body,
     });
-    return await response.json();
+    
+    return response;
   } catch (error) {
     console.log(error);
   }

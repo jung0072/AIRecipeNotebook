@@ -3,25 +3,12 @@ import axios from "axios";
 
 import { ChatOpenAI } from "langchain/chat_models/openai";
 import { ChatPromptTemplate } from "langchain/prompts";
-import { BaseOutputParser } from "langchain/schema/output_parser";
-import { calculateCost } from "@/lib/calculate-cost";
+import { BaseCallbackHandler } from "langchain/callbacks";
 
-let totalInputTokens = 0;
-let totalOutputTokens = 0;
+// import { calculateCost } from "@/lib/calculate-cost";
 
-const chatModel = new ChatOpenAI({
-  openAIApiKey: process.env.OPENAI_API_KEY,
-  modelName: "gpt-4-1106-preview",
-  callbacks: [
-    {
-      handleLLMEnd: (output, runId, parentRunId, tags) => {
-        const { promptTokens, completionTokens } = output.llmOutput?.tokenUsage;
-        totalInputTokens += promptTokens ?? 0;
-        totalOutputTokens += completionTokens ?? 0;
-      },
-    },
-  ],
-});
+// let totalInputTokens = 0;
+// let totalOutputTokens = 0;
 
 export async function POST(req: Request) {
   console.log("\x1b[32m>>> API POST recipe/generate <<<\x1b[0m");
@@ -111,15 +98,37 @@ The markdown should contain the following information: title, total_yield, descr
       recipeData: recipeData,
     });
 
-    const completion: any = await chatModel
-      .predictMessages(messages)
-      .then((response) => {
-        calculateCost(totalInputTokens, totalOutputTokens);
-        return response.content;
-      });
+    class MyCustomHandler extends BaseCallbackHandler {
+      name = "MyCustomHandler";
+      controller: any;
 
-    console.log(">>> completion", completion);
-    return new Response(JSON.stringify({ data: completion }), { status: 200 });
+      constructor(controller: any) {
+        super();
+        this.controller = controller;
+      }
+
+      handleLLMNewToken(token: any) {
+        this.controller.enqueue(token);
+      }
+
+      handleLLMEnd() {
+        this.controller.close();
+      }
+    }
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        const chatModel = new ChatOpenAI({
+          openAIApiKey: process.env.OPENAI_API_KEY,
+          modelName: "gpt-3.5-turbo",
+          streaming: true,
+          callbacks: [new MyCustomHandler(controller)],
+        });
+        chatModel.predictMessages(messages);
+      },
+    });
+
+    return new Response(stream);
   } catch (error: any) {
     console.error(error);
     return new Response(JSON.stringify({ error: error.message }), {

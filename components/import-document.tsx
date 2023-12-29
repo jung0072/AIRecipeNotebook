@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { BlockNoteEditor, PartialBlock, Block } from "@blocknote/core";
 
@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/spinner";
-
 
 const FormSchema = z.object({
   url: z.string().url({
@@ -41,6 +40,9 @@ export function ImportDocument({
   initialContent,
 }: ImportDocumentProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [response, setResponse] = useState("");
+  const [isStreamDoneReading, setIsStreamDoneReading] = useState(false);
+
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -55,20 +57,6 @@ export function ImportDocument({
   }
 
   const getBlocks = async (content: string) => {
-    console.log("Get Block and insert");
-    console.log(content);
-    // content = content
-    //   .replace("```markdown\n", "m")
-    //   .replace("\n```", "")
-    //   .replace("---\n", "")
-    //   .replaceAll("**", "")
-    //   .replaceAll("#", "")
-    //   .replaceAll(":", "")
-    //   .replace(/(?<!#)[Tt]otal [Yy]ield(:?\b)/, "### Total Yield")
-    //   .replace(/(?<!#)[Dd]escription:?\b/, "## Description\n")
-    //   .replace(/(?<!#)[Ii]ngredients:?\b/, "## Ingredients\n")
-    //   .replace(/(?<!#)[Ii]nstructions:?\b/, "## Instructions\n");
-
     let title = content.slice(0, content.indexOf("\n"));
     title = title
       .replace("\n", "")
@@ -83,23 +71,38 @@ export function ImportDocument({
     onChange(JSON.stringify(editor.topLevelBlocks, null, 2), title);
   };
 
-  function onSubmit(data: z.infer<typeof FormSchema>) {
+  async function onSubmit(data: z.infer<typeof FormSchema>) {
     setIsLoading(true);
 
-    generateRecipe(data)
-      .then((response) => {
-        if (response.error) {
-          console.error("Error in response:", response.error);
-          return;
-        }
-        getBlocks(response.data);
-        setIsLoading(false);
-      })
-      .catch((error: any) => {
-        console.log(error);
-        setIsLoading(false);
-      });
+    const res = await generateRecipe(data)
+    if (!res) return;
+
+    if (!res.ok) throw new Error(res.statusText);
+
+    const stream = res.body;
+    if (!stream) return;
+
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { value, done: doneReading } = await reader.read();
+      setIsStreamDoneReading(doneReading);
+      const chunkValue = decoder.decode(value);
+      setResponse((prev) => prev + chunkValue);
+      if (doneReading) {
+        break;
+      }
+    }
+    setIsLoading(false);
   }
+
+  useEffect(() => {
+    if (response && isStreamDoneReading === true) {
+      getBlocks(response);
+      setResponse("")
+    }
+  }, [isStreamDoneReading]);
 
   return (
     <div className="pl-[54px] mb-2 flex flex-col items-start justify-center ">
@@ -129,6 +132,7 @@ export function ImportDocument({
           />
         </form>
       </Form>
+      <div>{response}</div>
     </div>
   );
 }
