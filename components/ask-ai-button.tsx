@@ -83,22 +83,26 @@ export function AskAIButton({
 
   async function handleAddImagesBtnClick() {
     setIsLoading(true);
+    try {
+      const topLvBlocks = editor.topLevelBlocks;
+      const topLvBlocksMarkdown = await editor.blocksToMarkdown(topLvBlocks);
 
-    const topLvBlocks = editor.topLevelBlocks;
-    const topLvBlocksMarkdown = await editor.blocksToMarkdown(topLvBlocks);
+      const response = await generateImage(topLvBlocksMarkdown);
 
-    const response = await generateImage(topLvBlocksMarkdown);
+      // let imageBlock = [{ type: "image" as const, props: { url: response.url } }];
+      // editor.insertBlocks(imageBlock, topLvBlocks[0].id, "before");
 
-    // let imageBlock = [{ type: "image", props: { url: response.url } }];
-    // editor.insertBlocks(imageBlock, topLvBlocks[0].id, "before");
-    
-    editor.insertBlocks(
-      [{ type: "image", props: { url: response.url } }],
-      topLvBlocks[0].id,
-      "before"
-    );
-    
-    setIsLoading(false);
+      editor.insertBlocks(
+        [{ type: "image", props: { url: response.url } }],
+        topLvBlocks[0].id,
+        "before"
+      );
+
+      setIsLoading(false);
+    } catch (error) {
+      console.log(error);
+      setIsLoading(false);
+    }
   }
 
   async function handleAIBtnClick() {
