@@ -73,28 +73,36 @@ export function ImportDocument({
 
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     setIsLoading(true);
-
-    const res = await generateRecipe(data)
-    if (!res) return;
-
-    if (!res.ok) throw new Error(res.statusText);
-
-    const stream = res.body;
-    if (!stream) return;
-
-    const reader = stream.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { value, done: doneReading } = await reader.read();
-      setIsStreamDoneReading(doneReading);
-      const chunkValue = decoder.decode(value);
-      setResponse((prev) => prev + chunkValue);
-      if (doneReading) {
-        break;
+    try {
+      const res = await generateRecipe(data)
+      // console.log(`( res )===============>`, res);
+      
+      if (!res) return;
+  
+      if (!res.ok) throw new Error(res.statusText);
+  
+      const stream = res.body;
+      // console.log(`( stream )===============>`, stream);
+      if (!stream) return;
+  
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+  
+      while (true) {
+        const { value, done: doneReading } = await reader.read();
+        setIsStreamDoneReading(doneReading);
+        const chunkValue = decoder.decode(value);
+        // console.log(`( chunkValue )===============>`, chunkValue);
+        setResponse((prev) => prev + chunkValue);
+        if (doneReading) {
+          break;
+        }
       }
+      setIsLoading(false);
+    } catch (error) {
+      console.error(error);
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }
 
   useEffect(() => {

@@ -108,10 +108,12 @@ The markdown should contain the following information: title, total_yield, descr
       }
 
       handleLLMNewToken(token: any) {
+        console.log(token)
         this.controller.enqueue(token);
       }
 
       handleLLMEnd() {
+        console.log("handleLLMend")
         this.controller.close();
       }
     }
