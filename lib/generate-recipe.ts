@@ -8,12 +8,13 @@ const FormSchema = z.object({
 
 export const generateRecipe = async (form: z.infer<typeof FormSchema>) => {
   const body = JSON.stringify(form);
-  console.log(`( body )===============>`, body);
+  // console.log(`( body )===============>`, body);
   try {
-    // http://localhost:6001/api/recipe/generate
-    // /api/recipe/generate
-    // 159.203.19.109/api/recipe/generate
-    const response = await fetch("159.203.19.109/api/recipe/generate", {
+    // http://localhost:6001
+    const url =
+      process.env.NEXT_PUBLIC_DIGITAL_OCEAN_SERVER_URL + "/api/recipe/generate";
+    console.log("url ===> ", url)
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
