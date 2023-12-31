@@ -10,7 +10,7 @@ export const generateImage = async (topLvBlocksMarkdown: string) => {
   }
 
   try {
-    const url = process.env.NEXT_PUBLIC_DIGITAL_OCEAN_SERVER_URL + "/api/recipe/generate";
+    const url = process.env.NEXT_PUBLIC_DIGITAL_OCEAN_SERVER_URL + "/api/image/generate";
     // const url = "http://localhost:8080/api/image/generate";
     const response = await fetch(url, {
       method: "POST",
