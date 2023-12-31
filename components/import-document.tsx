@@ -42,6 +42,7 @@ export function ImportDocument({
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState("");
   const [isStreamDoneReading, setIsStreamDoneReading] = useState(false);
+  const [status, setStatus] = useState("");
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -57,6 +58,7 @@ export function ImportDocument({
   }
 
   const getBlocks = async (content: string) => {
+    setStatus(content);
     let title = content.slice(0, content.indexOf("\n"));
     title = title
       .replace("\n", "")
@@ -141,6 +143,7 @@ export function ImportDocument({
         </form>
       </Form>
       <div>{response}</div>
+      <div>{status}</div>
     </div>
   );
 }
