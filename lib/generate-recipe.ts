@@ -13,7 +13,7 @@ export const generateRecipe = async (form: z.infer<typeof FormSchema>) => {
     // http://localhost:6001
     const url =
       process.env.NEXT_PUBLIC_DIGITAL_OCEAN_SERVER_URL + "/api/recipe/generate";
-    console.log("url ===> ", url)
+    console.log("url ===> ", process.env.NEXT_PUBLIC_DIGITAL_OCEAN_SERVER_URL);
     const response = await fetch(url, {
       method: "POST",
       headers: {
