@@ -127,12 +127,13 @@ export const Navigation = () => {
 
   const { ref } = useSwipeable({
     onSwipedLeft: () => collapse(),
-    onSwipedRight: () => resetWidth(),
-  }) as { ref: RefCallback<Document> };
+    // onSwipedRight: () => resetWidth(),
+  }) as { ref: RefCallback<HTMLElement> };
 
   useEffect(() => {
-    ref(document);
-    return () => ref(null);
+    if (sidebarRef.current) {
+      ref(sidebarRef.current);
+    }
   });
 
   const handleCreate = () => {
@@ -152,21 +153,38 @@ export const Navigation = () => {
       <aside
         ref={sidebarRef}
         className={cn(
-          "group/sidebar h-full bg-secondary overflow-y-auto relative flex w-60 flex-col z-[99999]",
+          // z-999 must be lower than 1000 which is the z-index of SideMenuPositioner's Tippy popover menu
+          "group/sidebar h-full bg-secondary overflow-y-auto relative flex w-60 flex-col z-[999]",
           isResetting && "transition-all ease-in-out duration-300",
           isMobile && "w-0"
         )}
       >
-        <div
-          onClick={collapse}
-          role="button"
-          className={cn(
-            "h-8 w-8 text-muted-foreground rounded-sm absolute top-2 right-2 transition flex",
-            isMobile ? "" : "hover:bg-neutral-300 dark:hover:bg-neutral-600"
-          )}
-        >
-          <ChevronsLeft className="justify-center items-center h-full w-full p-1" />
-        </div>
+        {isMobile ? (
+          <div
+            onClick={collapse}
+            role="button"
+            className={cn(
+              "h-8 w-15 text-muted-foreground rounded-sm absolute top-1/2 right-2 transition flex",
+              isMobile ? "" : "hover:bg-neutral-300 dark:hover:bg-neutral-600"
+            )}
+          >
+            {isMobile && (
+              <span className="justify-center items-center p-1">swipe</span>
+            )}
+            <ChevronsLeft className="justify-center items-center h-full w-full p-1" />
+          </div>
+        ) : (
+          <div
+            onClick={collapse}
+            role="button"
+            className={cn(
+              "h-8 w-8 text-muted-foreground rounded-sm absolute top-2 right-2 transition flex",
+              isMobile ? "" : "hover:bg-neutral-300 dark:hover:bg-neutral-600"
+            )}
+          >
+            <ChevronsLeft className="justify-center items-center h-full w-full p-1" />
+          </div>
+        )}
         <div>
           <UserItem />
           <Item label="Search" icon={Search} isSearch onClick={search.onOpen} />

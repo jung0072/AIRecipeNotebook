@@ -37,7 +37,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.className} overscroll-none`}>
         <ConvexClientProvider>
           <EdgeStoreProvider>
             <ThemeProvider
@@ -55,5 +55,5 @@ export default function RootLayout({
         </ConvexClientProvider>
       </body>
     </html>
-  )
+  );
 }
