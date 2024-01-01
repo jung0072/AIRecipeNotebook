@@ -146,8 +146,8 @@ export const Navigation = () => {
           onClick={collapse}
           role="button"
           className={cn(
-            "h-8 w-8 text-muted-foreground rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600 absolute top-2 right-2 transition flex",
-            isMobile && "opacity-100"
+            "h-8 w-8 text-muted-foreground rounded-sm absolute top-2 right-2 transition flex",
+            isMobile ? "" : "hover:bg-neutral-300 dark:hover:bg-neutral-600"
           )}
         >
           <ChevronsLeft className="justify-center items-center h-full w-full p-1" />
