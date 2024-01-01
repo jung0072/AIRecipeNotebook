@@ -11,20 +11,15 @@ const font = Poppins({
 export const Logo = () => {
   return (
     <div className="hidden md:flex items-center gap-x-2">
-      <Image
-        src="/logo.svg"
-        height="40"
-        width="40"
-        alt="Logo"
-        className="dark:hidden"
-      />
-      <Image
-        src="/logo-dark.svg"
-        height="40"
-        width="40"
-        alt="Logo"
-        className="hidden dark:block"
-      />
+      <div className="rounded-full overflow-hidden">
+        <Image
+          src="/logo.png"
+          height="50"
+          width="50"
+          alt="Logo"
+          className="circle-icon"
+        />
+      </div>
       <p className={cn("font-semibold", font.className)}>
         Recipeasy
       </p>

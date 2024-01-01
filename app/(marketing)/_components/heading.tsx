@@ -14,11 +14,11 @@ export const Heading = () => {
   return (
     <div className="max-w-3xl space-y-4">
       <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold">
-        Your Ideas, Documents, & Plans. Unified. Welcome to <span className="underline">Recipeasy</span>
+        Organize your recipes with AI assistant. Welcome to <span className="underline">Recipeasy</span>
       </h1>
       <h3 className="text-base sm:text-xl md:text-2xl font-medium">
-        Recipeasy is the connected workspace where <br />
-        better, faster work happens.
+        With a smart AI recipe book, <br />
+        streamline your cooking process.
       </h3>
       {isLoading && (
         <div className="w-full flex items-center justify-center">
@@ -42,5 +42,5 @@ export const Heading = () => {
         </SignInButton>
       )}
     </div>
-  )
+  );
 }

@@ -52,7 +52,8 @@ export const Navbar = () => {
             />
           </>
         )}
-        <ModeToggle />
+        {/* Don't use night mode yet */}
+        {/* <ModeToggle /> */}
       </div>
     </div>
   )

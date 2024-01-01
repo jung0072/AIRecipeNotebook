@@ -146,38 +146,25 @@ export const Navigation = () => {
           onClick={collapse}
           role="button"
           className={cn(
-            "h-6 w-6 text-muted-foreground rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600 absolute top-3 right-2 opacity-0 group-hover/sidebar:opacity-100 transition",
+            "h-8 w-8 text-muted-foreground rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600 absolute top-2 right-2 transition flex",
             isMobile && "opacity-100"
           )}
         >
-          <ChevronsLeft className="h-6 w-6" />
+          <ChevronsLeft className="justify-center items-center h-full w-full p-1" />
         </div>
         <div>
           <UserItem />
-          <Item
-            label="Search"
-            icon={Search}
-            isSearch
-            onClick={search.onOpen}
-          />
-          <Item
-            label="Settings"
-            icon={Settings}
-            onClick={settings.onOpen}
-          />
-          <Item
+          <Item label="Search" icon={Search} isSearch onClick={search.onOpen} />
+          <Item label="Settings" icon={Settings} onClick={settings.onOpen} />
+          {/* <Item
             onClick={handleCreate}
             label="New page"
             icon={PlusCircle}
-          />
+          /> */}
         </div>
         <div className="mt-4">
           <DocumentList />
-          <Item
-            onClick={handleCreate}
-            icon={Plus}
-            label="Add a page"
-          />
+          <Item onClick={handleCreate} icon={Plus} label="Add a page" />
           <Popover>
             <PopoverTrigger className="w-full mt-4">
               <Item label="Trash" icon={Trash} />
@@ -205,16 +192,19 @@ export const Navigation = () => {
         )}
       >
         {!!params.documentId ? (
-          <Navbar
-            isCollapsed={isCollapsed}
-            onResetWidth={resetWidth}
-          />
+          <Navbar isCollapsed={isCollapsed} onResetWidth={resetWidth} />
         ) : (
           <nav className="bg-transparent px-3 py-2 w-full">
-            {isCollapsed && <MenuIcon onClick={resetWidth} role="button" className="h-6 w-6 text-muted-foreground" />}
+            {isCollapsed && (
+              <MenuIcon
+                onClick={resetWidth}
+                role="button"
+                className="h-6 w-6 text-muted-foreground"
+              />
+            )}
           </nav>
         )}
       </div>
     </>
-  )
+  );
 }
