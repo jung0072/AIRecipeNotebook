@@ -38,11 +38,11 @@ export function AskAIButton({
   const recognition = new SpeechRecognition();
 
   recognition.onstart = function () {
-    console.log("Voice activated, you can speak to microphone.");
+    // console.log("Voice activated, you can speak to microphone.");
   };
 
   recognition.onresult = function (event: any) {
-    console.log("recognition onresult");
+    // console.log("recognition onresult");
     const transcript = event.results[0][0].transcript;
     inputRef.current!.value = transcript;
     inputRef.current!.style.height = `${inputRef.current!.scrollHeight}px`;
@@ -76,6 +76,20 @@ export function AskAIButton({
 
     setConfirmModal(false);
   }
+  function handleCancelModifyBtnClick() {
+    matchedBlockIds.forEach((matchedBlockId, index) => {
+      const block = editor.getBlock(matchedBlockId);
+      if (block && block.content && block.content[0].type === "text") {
+        editor.updateBlock(matchedBlockId, {
+          props: { backgroundColor: "default" },
+        });
+        // console.log("update blocks")
+      }
+      setIsClicked(false);
+    });
+
+    setConfirmModal(false);
+  }
 
   function handleCancelBtnClick() {
     setIsClicked(false);
@@ -100,17 +114,17 @@ export function AskAIButton({
 
       setIsLoading(false);
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       setIsLoading(false);
     }
   }
 
   async function handleAIBtnClick() {
-    console.log("handleAIBtnClick");
+    // console.log("handleAIBtnClick");
     let inputPrompt = "Change the total yield to 3 servings";
 
     if (inputRef.current && inputRef.current.value !== "") {
-      console.log(inputRef.current.value);
+      // console.log(inputRef.current.value);
       inputPrompt = inputRef.current.value;
     }
 
@@ -122,7 +136,7 @@ export function AskAIButton({
       blocksToModify = editor.topLevelBlocks;
     }
 
-    // Remove blocks that are not text which are empty in content
+    // Remove blocks that are not text
     blocksToModify = blocksToModify.filter(
       (block) => block.content != undefined
     ) as Block[];
@@ -137,8 +151,12 @@ export function AskAIButton({
           console.error("Error in response:", response.error);
           return;
         }
-        console.log("Response from modifyRecipe API:", response.data);
-
+        // console.log("Response from modifyRecipe API:", response.data);
+        // console.log(
+          "response.data.modified_recipe",
+          response.data.modified_recipe
+        );
+        // console.log("response.data.selected_parts",  response.data.selected_parts)
         setModifiedRecipe(response.data.modified_recipe);
         const selected_parts = response.data.selected_parts;
 
@@ -163,7 +181,7 @@ export function AskAIButton({
         setMatchedBlockIds(matchedBlockIds_buffer);
       })
       .catch((error: any) => {
-        console.log(error);
+        // console.log(error);
       })
       .finally(() => {
         // Set isLoading back to false when the request finishes
@@ -195,7 +213,7 @@ export function AskAIButton({
               resize: "none",
             }}
             onChange={(event) => {
-              console.log("onChange event");
+              // console.log("onChange event");
               event.target.style.height = "inherit";
               event.target.style.height = `${event.target.scrollHeight}px`;
             }}
@@ -210,8 +228,12 @@ export function AskAIButton({
           >
             <FaMicrophone />
           </Button>
-          {confirmModal ? (
-            <Button onClick={handleAcceptBtnClick}>Accept</Button>
+          {confirmModal ? (<>
+            <Button onClick={handleAcceptBtnClick} style={{
+              marginRight: "10px",
+            }}>Accept</Button>
+            <Button onClick={handleCancelModifyBtnClick}>Cancel</Button>
+            </>
           ) : (
             <div className="flex gap-3">
               <Button onClick={handleAIBtnClick}>Enter</Button>

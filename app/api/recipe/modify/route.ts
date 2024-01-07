@@ -152,13 +152,13 @@ const llmChain2 = new LLMChain({
 
 const sequentialChain = new SequentialChain({
   chains: [llmChain, transformChain, llmChain2],
-  verbose: true,
+  verbose: false,
   inputVariables: ["recipe_document", "promptMessage", "format_instructions"],
   outputVariables: ["selected_parts", "modified_recipe"],
 });
 
 export async function POST(req: Request) {
-  console.log("\x1b[32m>>> API POST recipe/modify <<<\x1b[0m");
+  // console.log("\x1b[32m>>> API POST recipe/modify <<<\x1b[0m");
   
   const dummy_data = {
     selected_parts: [
@@ -196,7 +196,7 @@ export async function POST(req: Request) {
       "Nutrition Per serving (0.66 cup) 150kcal | Carbohydrates 13g | Protein 3g | Fat 8.5g | Saturated Fat 0.5g | Sodium 266.5mg | Fiber 1.5g | Sugar 1g",
     ],
   };
-  const debug = false;
+  const debug = true;
   if (debug) {
     return new Response(JSON.stringify({ data: dummy_data }), {
       status: 200,
@@ -206,7 +206,7 @@ export async function POST(req: Request) {
   const { promptMessage, document } = await req.json();
   
   try {
-    const completion: any =  sequentialChain.call({
+    const completion: any = await sequentialChain.call({
       format_instructions: outputFixingParser.getFormatInstructions(),
       recipe_document: document,
       promptMessage: promptMessage,

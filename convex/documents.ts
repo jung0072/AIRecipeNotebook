@@ -69,13 +69,9 @@ export const getSidebar = query({
     const documents = await ctx.db
       .query("documents")
       .withIndex("by_user_parent", (q) =>
-        q
-          .eq("userId", userId)
-          .eq("parentDocument", args.parentDocument)
+        q.eq("userId", userId).eq("parentDocument", args.parentDocument)
       )
-      .filter((q) =>
-        q.eq(q.field("isArchived"), false)
-      )
+      .filter((q) => q.eq(q.field("isArchived"), false))
       .order("desc")
       .collect();
 
@@ -86,7 +82,8 @@ export const getSidebar = query({
 export const create = mutation({
   args: {
     title: v.string(),
-    parentDocument: v.optional(v.id("documents"))
+    parentDocument: v.optional(v.id("documents")),
+    type: v.string(),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -103,6 +100,7 @@ export const create = mutation({
       userId,
       isArchived: false,
       isPublished: false,
+      type: args.type,
     });
 
     return document;

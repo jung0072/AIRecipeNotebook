@@ -77,14 +77,14 @@ export function ImportDocument({
     setIsLoading(true);
     try {
       const res = await generateRecipe(data)
-      // console.log(`( res )===============>`, res);
+      // // console.log(`( res )===============>`, res);
       
       if (!res) return;
   
       if (!res.ok) throw new Error(res.statusText);
   
       const stream = res.body;
-      // console.log(`( stream )===============>`, stream);
+      // // console.log(`( stream )===============>`, stream);
       if (!stream) return;
   
       const reader = stream.getReader();
@@ -94,7 +94,7 @@ export function ImportDocument({
         const { value, done: doneReading } = await reader.read();
         setIsStreamDoneReading(doneReading);
         const chunkValue = decoder.decode(value);
-        // console.log(`( chunkValue )===============>`, chunkValue);
+        // // console.log(`( chunkValue )===============>`, chunkValue);
         setResponse((prev) => prev + chunkValue);
         if (doneReading) {
           break;
@@ -142,8 +142,8 @@ export function ImportDocument({
           />
         </form>
       </Form>
-      <div>{response}</div>
-      <div>{status}</div>
+      {/* <div>{response}</div> */}
+      {/* <div>{status}</div> */}
     </div>
   );
 }

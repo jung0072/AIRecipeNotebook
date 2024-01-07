@@ -8,6 +8,7 @@ import {
   Search,
   Settings,
   Trash,
+  FlaskConical,
 } from "lucide-react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { ElementRef, useEffect, useRef, useState } from "react";
@@ -137,7 +138,7 @@ export const Navigation = () => {
   });
 
   const handleCreate = () => {
-    const promise = create({ title: "Untitled" }).then((documentId) =>
+    const promise = create({ title: "Untitled", type: "recipe" }).then((documentId) =>
       router.push(`/documents/${documentId}`)
     );
 
@@ -147,6 +148,20 @@ export const Navigation = () => {
       error: "Failed to create a new note.",
     });
   };
+
+  const handleAskAnything = () => {
+    // create document
+    const promise = create({ title: "Ask anything", type: "askanything" }).then((documentId) =>
+    router.push(`/askanything/${documentId}`)
+    );
+
+    toast.promise(promise, {
+      loading: "Creating a new note...",
+      success: "New note created!",
+      error: "Failed to create a new note.",
+    });
+  };
+
 
   return (
     <>
@@ -189,11 +204,11 @@ export const Navigation = () => {
           <UserItem />
           <Item label="Search" icon={Search} isSearch onClick={search.onOpen} />
           <Item label="Settings" icon={Settings} onClick={settings.onOpen} />
-          {/* <Item
-            onClick={handleCreate}
-            label="New page"
-            icon={PlusCircle}
-          /> */}
+          <Item
+            onClick={handleAskAnything}
+            label="Ask Anything"
+            icon={FlaskConical}
+          />
         </div>
         <div className="mt-4">
           <DocumentList />
