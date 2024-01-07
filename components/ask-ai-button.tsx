@@ -38,11 +38,11 @@ export function AskAIButton({
   const recognition = new SpeechRecognition();
 
   recognition.onstart = function () {
-    // console.log("Voice activated, you can speak to microphone.");
+    console.log("Voice activated, you can speak to microphone.");
   };
 
   recognition.onresult = function (event: any) {
-    // console.log("recognition onresult");
+    console.log("recognition onresult");
     const transcript = event.results[0][0].transcript;
     inputRef.current!.value = transcript;
     inputRef.current!.style.height = `${inputRef.current!.scrollHeight}px`;
@@ -83,7 +83,7 @@ export function AskAIButton({
         editor.updateBlock(matchedBlockId, {
           props: { backgroundColor: "default" },
         });
-        // console.log("update blocks")
+        console.log("update blocks")
       }
       setIsClicked(false);
     });
@@ -114,7 +114,7 @@ export function AskAIButton({
 
       setIsLoading(false);
     } catch (error) {
-      // console.log(error);
+      console.log(error);
       setIsLoading(false);
     }
   }
@@ -152,11 +152,6 @@ export function AskAIButton({
           return;
         }
         // console.log("Response from modifyRecipe API:", response.data);
-        // console.log(
-          "response.data.modified_recipe",
-          response.data.modified_recipe
-        );
-        // console.log("response.data.selected_parts",  response.data.selected_parts)
         setModifiedRecipe(response.data.modified_recipe);
         const selected_parts = response.data.selected_parts;
 
@@ -181,7 +176,7 @@ export function AskAIButton({
         setMatchedBlockIds(matchedBlockIds_buffer);
       })
       .catch((error: any) => {
-        // console.log(error);
+        console.log(error);
       })
       .finally(() => {
         // Set isLoading back to false when the request finishes
@@ -213,7 +208,7 @@ export function AskAIButton({
               resize: "none",
             }}
             onChange={(event) => {
-              // console.log("onChange event");
+              console.log("onChange event");
               event.target.style.height = "inherit";
               event.target.style.height = `${event.target.scrollHeight}px`;
             }}

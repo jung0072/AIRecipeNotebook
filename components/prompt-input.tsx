@@ -54,7 +54,7 @@ export function PromptInput({ onChange, editor }: ImportDocumentProps) {
           console.error("Error in response:", response.error);
           return;
         }
-        console.log(response.data);
+        // console.log(response.data);
       })
       .catch((error: any) => {
         console.log(error);
