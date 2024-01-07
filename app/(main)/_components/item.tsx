@@ -36,7 +36,6 @@ interface ItemProps {
   label: string;
   onClick?: () => void;
   icon: LucideIcon;
-  type: string;
 };
 
 export const Item = ({
@@ -50,7 +49,6 @@ export const Item = ({
   level = 0,
   onExpand,
   expanded,
-  type
 }: ItemProps) => {
   const { user } = useUser();
   const router = useRouter();
@@ -84,7 +82,7 @@ export const Item = ({
   ) => {
     event.stopPropagation();
     if (!id) return;
-    const promise = create({ title: "Untitled", parentDocument: id, type: type })
+    const promise = create({ title: "Untitled", parentDocument: id, type: 'recipe' })
       .then((documentId) => {
         if (!expanded) {
           onExpand?.();

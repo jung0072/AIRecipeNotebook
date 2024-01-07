@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 
 import { BlockNoteEditor, Block, PartialBlock } from "@blocknote/core";
 import { Button } from "../components/ui/button";
@@ -33,20 +33,24 @@ export function AskAIButton({
   const [modifiedRecipe, setModifiedRecipe] = useState<string[]>([]);
   const [confirmModal, setConfirmModal] = useState<boolean>(false);
 
-  const SpeechRecognition =
-    window.SpeechRecognition || window.webkitSpeechRecognition;
-  const recognition = new SpeechRecognition();
+  const recognition = useMemo(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
 
-  recognition.onstart = function () {
-    console.log("Voice activated, you can speak to microphone.");
-  };
+    recognition.onstart = function () {
+      console.log("Voice activated, you can speak to microphone.");
+    };
 
-  recognition.onresult = function (event: any) {
-    console.log("recognition onresult");
-    const transcript = event.results[0][0].transcript;
-    inputRef.current!.value = transcript;
-    inputRef.current!.style.height = `${inputRef.current!.scrollHeight}px`;
-  };
+    recognition.onresult = function (event: any) {
+      console.log("recognition onresult");
+      const transcript = event.results[0][0].transcript;
+      inputRef.current!.value = transcript;
+      inputRef.current!.style.height = `${inputRef.current!.scrollHeight}px`;
+    };
+
+    return recognition;
+  }, []);
 
   useEffect(() => {
     if (speechRecBtnRef.current) {
@@ -54,7 +58,7 @@ export function AskAIButton({
         recognition.start();
       });
     }
-  }, [isClicked, recognition]);
+  }, [isClicked]);
 
   function handleAcceptBtnClick() {
     matchedBlockIds.forEach((matchedBlockId, index) => {

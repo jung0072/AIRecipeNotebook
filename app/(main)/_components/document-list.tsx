@@ -80,7 +80,6 @@ export const DocumentList = ({
             level={level}
             onExpand={() => onExpand(document._id)}
             expanded={expanded[document._id]}
-            type={document.type}
           />
           {expanded[document._id] && (
             <DocumentList
