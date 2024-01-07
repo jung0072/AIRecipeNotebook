@@ -196,7 +196,7 @@ export async function POST(req: Request) {
       "Nutrition Per serving (0.66 cup) 150kcal | Carbohydrates 13g | Protein 3g | Fat 8.5g | Saturated Fat 0.5g | Sodium 266.5mg | Fiber 1.5g | Sugar 1g",
     ],
   };
-  const debug = true;
+  const debug = false;
   if (debug) {
     return new Response(JSON.stringify({ data: dummy_data }), {
       status: 200,
