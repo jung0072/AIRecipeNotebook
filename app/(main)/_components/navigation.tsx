@@ -150,16 +150,7 @@ export const Navigation = () => {
   };
 
   const handleAskAnything = () => {
-    // create document
-    const promise = create({ title: "Ask anything", type: "askanything" }).then((documentId) =>
-    router.push(`/askanything/${documentId}`)
-    );
-
-    toast.promise(promise, {
-      loading: "Creating a new note...",
-      success: "New note created!",
-      error: "Failed to create a new note.",
-    });
+    router.push(`/askanything/`)
   };
 
 

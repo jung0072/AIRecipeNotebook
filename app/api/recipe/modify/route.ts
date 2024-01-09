@@ -42,7 +42,7 @@ const outputFixingParser = OutputFixingParser.fromLLM(
 );
 
 const system_instruction_for_format = `
-Follow the following format : {format_instructions}
+Follow the format. {format_instructions}
 `;
 
 const sample_user_instruction = `

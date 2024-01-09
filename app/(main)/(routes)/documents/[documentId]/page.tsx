@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import dynamic from "next/dynamic";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -14,15 +14,16 @@ interface DocumentIdPageProps {
   params: {
     documentId: Id<"documents">;
   };
-};
+}
 
-const DocumentIdPage = ({
-  params
-}: DocumentIdPageProps) => {
-  const Editor = useMemo(() => dynamic(() => import("@/components/editor"), { ssr: false }) ,[]);
+const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
+  const Editor = useMemo(
+    () => dynamic(() => import("@/components/editor"), { ssr: false }),
+    []
+  );
 
   const document = useQuery(api.documents.getById, {
-    documentId: params.documentId
+    documentId: params.documentId,
   });
 
   const update = useMutation(api.documents.update);
@@ -31,7 +32,7 @@ const DocumentIdPage = ({
     update({
       id: params.documentId,
       title,
-      content
+      content,
     });
   };
 
@@ -52,7 +53,7 @@ const DocumentIdPage = ({
   }
 
   if (document === null) {
-    return <div>Not found</div>
+    return <div>Not found</div>;
   }
 
   return (
@@ -64,6 +65,6 @@ const DocumentIdPage = ({
       </div>
     </div>
   );
-}
+};
 
 export default DocumentIdPage;

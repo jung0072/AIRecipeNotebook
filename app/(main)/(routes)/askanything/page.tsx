@@ -1,14 +1,19 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { useEffect, useState } from "react";
 
-import { BlockNoteEditor, PartialBlock, Block } from "@blocknote/core";
 
-import { generateRecipe } from "@/lib/generate-recipe";
+import Image from "next/image";
+import { useUser } from "@clerk/clerk-react";
+import { PlusCircle } from "lucide-react";
+import { useMutation } from "convex/react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
+import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -21,28 +26,21 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/spinner";
+import { askAnything } from "@/lib/askanything";
 
 const FormSchema = z.object({
-  url: z.string().url({
-    message: "Please enter a valid URL.",
+  prompt: z.string().length(3,{
+    message: "Please enter a valid prompt.",
   }),
 });
 
-interface ImportDocumentProps {
-  onChange: (content?: string, title?: string) => void;
-  editor: BlockNoteEditor;
-  initialContent?: string;
-}
-
-export function ImportDocument({
-  onChange: onChange,
-  editor,
-  initialContent,
-}: ImportDocumentProps) {
-  const [isLoading, setIsLoading] = useState(false);
+const DocumentsPage = () => {
+  const router = useRouter();
+  const { user } = useUser();
+  const create = useMutation(api.documents.create);
   const [response, setResponse] = useState("");
   const [isStreamDoneReading, setIsStreamDoneReading] = useState(false);
-  const [status, setStatus] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -65,36 +63,15 @@ export function ImportDocument({
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      url: "https://dishingouthealth.com/zucchini-orzo-salad/",
+      prompt:
+        "draw a macro nutrition diagram for the recipe Zucchini Orzo Salad with Pepperoncini Dressing",
     },
   });
-
-  let firstBlock: Block;
-  if (initialContent) {
-    const blocks = JSON.parse(initialContent) as PartialBlock[];
-    firstBlock = blocks[0] as Block;
-  }
-
-  const getBlocks = async (content: string) => {
-    setStatus(content);
-    let title = content.slice(0, content.indexOf("\n"));
-    title = title
-      .replace("\n", "")
-      .replace(/[Tt]itle:?\b/, "")
-      .replaceAll("#", "")
-      .trim();
-
-    content = content.substring(content.indexOf("\n") + 1);
-
-    const blocks: Block[] = await editor.markdownToBlocks(content);
-    editor.insertBlocks(blocks, editor.topLevelBlocks[0], "before");
-    onChange(JSON.stringify(editor.topLevelBlocks, null, 2), title);
-  };
 
   async function handleOnSubmit(data: z.infer<typeof FormSchema>) {
     setIsLoading(true);
     try {
-      const res = await generateRecipe(data);
+      const res = await askAnything(data);
       // console.log(`( res )===============>`, res);
 
       if (!res) return;
@@ -112,7 +89,6 @@ export function ImportDocument({
         const { value, done: doneReading } = await reader.read();
         setIsStreamDoneReading(doneReading);
         const chunkValue = decoder.decode(value);
-        // console.log(`( chunkValue )===============>`, chunkValue);
         setResponse((prev) => prev + chunkValue);
         if (doneReading) {
           break;
@@ -125,28 +101,42 @@ export function ImportDocument({
     }
   }
 
-  useEffect(() => {
-    if (response && isStreamDoneReading === true) {
-      getBlocks(response);
-      setResponse("");
-    }
-  }, [isStreamDoneReading]);
+  const onCreate = () => {
+    const promise = create({ title: "Untitled", type: "document" })
+      .then((documentId) => router.push(`/documents/${documentId}`))
+
+    toast.promise(promise, {
+      loading: "Creating a new note...",
+      success: "New note created!",
+      error: "Failed to create a new note."
+    });
+  };
 
   return (
-    <div className="pl-[54px] mb-2 flex flex-col items-start justify-center ">
+    <div className="h-full flex flex-col items-center justify-center space-y-4">
+      <Image
+        src="/images/empty.png"
+        height="300"
+        width="300"
+        alt="Empty"
+        className="dark:hidden"
+      />
+      <h2 className="text-lg font-medium">
+        Hey {user?.firstName}, ask anything to your AI assistant
+      </h2>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(handleOnSubmit)}
-          className="w-full pr-[70px] space-y-6"
+          className="px-[70px] space-y-6"
         >
           <FormField
             control={form.control}
-            name="url"
+            name="prompt"
             render={({ field }) => (
               <FormItem>
                 <FormLabel></FormLabel>
                 <FormControl>
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 w-full">
                     <Input placeholder="URL" {...field} />
                     {isLoading ? (
                       <Button className="flex flex-row gap-2">
@@ -155,7 +145,7 @@ export function ImportDocument({
                       </Button>
                     ) : (
                       <Button type="submit" size="default" disabled={isLoading}>
-                        Import
+                        Ask
                       </Button>
                     )}
                   </div>
@@ -167,8 +157,8 @@ export function ImportDocument({
           />
         </form>
       </Form>
-      {/* <div>{response}</div> */}
-      {/* <div>{status}</div> */}
     </div>
   );
 }
+ 
+export default DocumentsPage;

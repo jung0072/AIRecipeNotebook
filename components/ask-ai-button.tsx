@@ -85,9 +85,16 @@ export function AskAIButton({
       const block = editor.getBlock(matchedBlockId);
       if (block && block.content && block.content[0].type === "text") {
         editor.updateBlock(matchedBlockId, {
+          content: [
+            {
+              type: "text",
+              text: block.content[0].text.split(" → ")[0].trim(),
+              styles: block.content[0].styles,
+            },
+          ],
           props: { backgroundColor: "default" },
         });
-        console.log("update blocks")
+        console.log("update blocks");
       }
       setIsClicked(false);
     });
@@ -107,9 +114,6 @@ export function AskAIButton({
 
       const response = await generateImage(topLvBlocksMarkdown);
 
-      // let imageBlock = [{ type: "image" as const, props: { url: response.url } }];
-      // editor.insertBlocks(imageBlock, topLvBlocks[0].id, "before");
-
       editor.insertBlocks(
         [{ type: "image", props: { url: response.url } }],
         topLvBlocks[0].id,
@@ -124,13 +128,12 @@ export function AskAIButton({
   }
 
   async function handleAIBtnClick() {
-    // console.log("handleAIBtnClick");
-    let inputPrompt = "Change the total yield to 3 servings";
-
-    if (inputRef.current && inputRef.current.value !== "") {
-      // console.log(inputRef.current.value);
-      inputPrompt = inputRef.current.value;
+    if (!inputRef.current || inputRef.current.value == "") {
+      console.error("Please enter a prompt to ask AI.");
+      return;
     }
+
+    let inputPrompt = inputRef.current.value;
 
     let blocksToModify: Block[];
     const selection = editor.getSelection();
@@ -155,25 +158,47 @@ export function AskAIButton({
           console.error("Error in response:", response.error);
           return;
         }
-        // console.log("Response from modifyRecipe API:", response.data);
+        console.log("Response from modifyRecipe API:", response.data);
         setModifiedRecipe(response.data.modified_recipe);
         const selected_parts = response.data.selected_parts;
 
         let matchedBlockIds_buffer: string[] = [];
 
-        selected_parts.forEach((selected_part: string) => {
+        selected_parts.forEach((selected_part: string, index: number) => {
+          selected_part = selected_part.trim();
           editor.topLevelBlocks.forEach((block) => {
             if (
               block.content &&
               block.content[0] &&
               block.content[0].type != "link" &&
-              block.content[0].text &&
-              block.content[0].text.trim() === selected_part.trim()
+              block.content[0].text
             ) {
-              editor.updateBlock(block.id, {
-                props: { backgroundColor: "blue" },
-              });
-              matchedBlockIds_buffer.push(block.id);
+              const original_block = block.content[0].text.trim();
+              // Check substring to prevent different notation of fractional numbers
+              if (
+                original_block.includes(selected_part) ||
+                original_block.includes(
+                  selected_part.substring(selected_part.indexOf(" ") + 1)
+                ) ||
+                original_block.includes(
+                  selected_part.substring(0, selected_part.lastIndexOf(" "))
+                )
+              ) {
+                editor.updateBlock(block.id, {
+                  content: [
+                    {
+                      type: "text",
+                      text:
+                        block.content[0].text +
+                        " → " +
+                        response.data.modified_recipe[index],
+                      styles: block.content[0].styles,
+                    },
+                  ],
+                  props: { backgroundColor: "blue" },
+                });
+                matchedBlockIds_buffer.push(block.id);
+              }
             }
           });
         });
@@ -192,56 +217,57 @@ export function AskAIButton({
   return (
     <div style={{ position: "fixed", bottom: "20px", right: "30px" }}>
       {isLoading ? (
-        <div className="flex items-center gap-3">
-          <span>Thinking...</span>
+        <Button variant="outline" className="flex items-center gap-3">
+          <span>Generating...</span>
           <Spinner />
-        </div>
+        </Button>
       ) : isClicked ? (
-        <div className="flex items-end">
+        <div className="flex flex-col items-end gap-3">
           <textarea
             rows={1}
             placeholder="Write prompt"
             style={{
-              marginRight: "10px",
+              // marginRight: "10px",
               padding: "5px",
               borderRadius: "5px",
               border: "1px solid #ccc",
-              minWidth: "100px",
-              maxWidth: "500px",
+              minWidth: "280px",
+              maxWidth: "400px",
               overflow: "hidden",
               resize: "none",
             }}
             onChange={(event) => {
-              console.log("onChange event");
               event.target.style.height = "inherit";
               event.target.style.height = `${event.target.scrollHeight}px`;
             }}
             ref={inputRef}
           />
 
-          <Button
+          {/* <Button
             ref={speechRecBtnRef}
-            style={{
-              marginRight: "10px",
-            }}
           >
             <FaMicrophone />
-          </Button>
-          {confirmModal ? (<>
-            <Button onClick={handleAcceptBtnClick} style={{
-              marginRight: "10px",
-            }}>Accept</Button>
-            <Button onClick={handleCancelModifyBtnClick}>Cancel</Button>
-            </>
-          ) : (
+          </Button> */}
+
+          {confirmModal ? (
             <div className="flex gap-3">
-              <Button onClick={handleAIBtnClick}>Enter</Button>
-              <Button variant="destructive" onClick={handleCancelBtnClick}>
+              <Button
+                variant="destructive"
+                onClick={handleCancelModifyBtnClick}
+              >
                 Cancel
               </Button>
+              <Button onClick={handleAcceptBtnClick}>Accept</Button>
+            </div>
+          ) : (
+            <div className="flex gap-3">
               <Button variant="outline" onClick={handleAddImagesBtnClick}>
                 Add Images
               </Button>
+              <Button variant="destructive" onClick={handleCancelBtnClick}>
+                Cancel
+              </Button>
+              <Button onClick={handleAIBtnClick}>Enter</Button>
             </div>
           )}
         </div>

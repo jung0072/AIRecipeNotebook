@@ -1,11 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { useTheme } from "next-themes";
 import { BlockNoteEditor, PartialBlock } from "@blocknote/core";
-import {
-  BlockNoteView,
-  useBlockNote,
-} from "@blocknote/react";
+import { BlockNoteView, useBlockNote } from "@blocknote/react";
 
 import "@blocknote/core/style.css";
 
@@ -13,8 +12,11 @@ import { Doc } from "@/convex/_generated/dataModel";
 
 import { ImportDocument } from "@/components/import-document";
 import { AskAIButton } from "@/components/ask-ai-button";
+import { Button } from "@/components/ui/button";
 
 import { useEdgeStore } from "@/lib/edgestore";
+import { modifyRecipe } from "@/lib/modify-recipe";
+import { Spinner } from "@/components/spinner";
 
 interface EditorProps {
   onChange: (content?: string, title?: string) => void;
@@ -27,6 +29,12 @@ const Editor = ({ onChange, initialData, editable }: EditorProps) => {
   const title = initialData?.title;
   const { resolvedTheme } = useTheme();
   const { edgestore } = useEdgeStore();
+  const [showModal, setShowModal] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const [modifiedRecipe, setModifiedRecipe] = useState<string[]>([]);
+  const [matchedBlockIds, setMatchedBlockIds] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<boolean>(false);
 
   const handleUpload = async (file: File) => {
     const response = await edgestore.publicFiles.upload({
@@ -47,6 +55,142 @@ const Editor = ({ onChange, initialData, editable }: EditorProps) => {
     uploadFile: handleUpload,
   });
 
+  const textCursorPosition = editor.getTextCursorPosition();
+
+  const handleEnter = async () => {
+    const currentBlockContentMD = await editor.blocksToMarkdown([
+      textCursorPosition.block,
+    ]);
+
+    setIsLoading(true);
+
+    modifyRecipe(inputValue, currentBlockContentMD)
+      .then(async (response: any) => {
+        if (response.error) {
+          console.error("Error in response:", response.error);
+          return;
+        }
+        console.log("Response from modifyRecipe API:", response.data);
+        setModifiedRecipe(response.data.modified_recipe);
+        const selected_parts = response.data.selected_parts;
+
+        let matchedBlockIds_buffer: string[] = [];
+
+        selected_parts.forEach((selected_part: string, index: number) => {
+          selected_part = selected_part.trim();
+          editor.topLevelBlocks.forEach((block) => {
+            if (
+              block.content &&
+              block.content[0] &&
+              block.content[0].type != "link" &&
+              block.content[0].text
+            ) {
+              const original_block = block.content[0].text.trim();
+              // Check substring to prevent different notation of fractional numbers
+              if (
+                original_block.includes(selected_part) ||
+                original_block.includes(
+                  selected_part.substring(selected_part.indexOf(" ") + 1)
+                ) ||
+                original_block.includes(
+                  selected_part.substring(0, selected_part.lastIndexOf(" "))
+                )
+              ) {
+                editor.updateBlock(block.id, {
+                  content: [
+                    {
+                      type: "text",
+                      text:
+                        block.content[0].text +
+                        " → " +
+                        response.data.modified_recipe[index],
+                      styles: block.content[0].styles,
+                    },
+                  ],
+                  props: { backgroundColor: "blue" },
+                });
+                matchedBlockIds_buffer.push(block.id);
+              }
+            }
+          });
+        });
+        setMatchedBlockIds(matchedBlockIds_buffer);
+      })
+      .catch((error: any) => {
+        console.log(error);
+      })
+      .finally(() => {
+        // Set isLoading back to false when the request finishes
+        setIsLoading(false);
+        setConfirmModal(true);
+      });
+  };
+
+  const handleCancel = () => {
+    // Handle cancel button click
+    console.log("Cancel button clicked");
+    // Close the modal
+    setShowModal(false);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.metaKey && event.key === "i") {
+        setShowModal(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  function handleAcceptBtnClick() {
+    console.log(`( matchedBlockIds )===============>`, matchedBlockIds);
+
+    matchedBlockIds.forEach((matchedBlockId, index) => {
+      const block = editor.getBlock(matchedBlockId);
+      if (block && block.content && block.content[0].type === "text") {
+        editor.updateBlock(matchedBlockId, {
+          content: [
+            {
+              type: "text",
+              text: modifiedRecipe[index],
+              styles: block.content[0].styles,
+            },
+          ],
+          props: { backgroundColor: "default" },
+        });
+        setShowModal(false);
+      }
+    });
+
+    setConfirmModal(false);
+  }
+
+  function handleCancelModifyBtnClick() {
+    matchedBlockIds.forEach((matchedBlockId, index) => {
+      const block = editor.getBlock(matchedBlockId);
+      if (block && block.content && block.content[0].type === "text") {
+        editor.updateBlock(matchedBlockId, {
+          content: [
+            {
+              type: "text",
+              text: block.content[0].text.split(" → ")[0].trim(),
+              styles: block.content[0].styles,
+            },
+          ],
+          props: { backgroundColor: "default" },
+        });
+        console.log("update blocks");
+      }
+      setShowModal(false);
+      setConfirmModal(false);
+    });
+  }
+
   return (
     <div>
       <ImportDocument
@@ -59,6 +203,46 @@ const Editor = ({ onChange, initialData, editable }: EditorProps) => {
         theme={resolvedTheme === "dark" ? "dark" : "light"}
       ></BlockNoteView>
       <AskAIButton onChange={onChange} editor={editor} title={title} />
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-4 rounded-md flex flex-col gap-3">
+            <textarea
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              className="border border-gray-300 rounded-md p-2 mb-2"
+              rows={Math.ceil(inputValue.length / 30)}
+            />
+            {confirmModal ? (
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="destructive"
+                  onClick={handleCancelModifyBtnClick}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleAcceptBtnClick}>Accept</Button>
+              </div>
+            ) : (
+              <div className="flex justify-end gap-3">
+                <Button onClick={handleEnter} variant="default">
+                  Enter
+                </Button>
+                <Button onClick={handleCancel} variant="destructive">
+                  Cancel
+                </Button>
+              </div>
+            )}
+            {isLoading && (
+              <div className="flex justify-end gap-3">
+                <Button variant="outline" >
+                  <span>Generating...</span>
+                  <Spinner />
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
