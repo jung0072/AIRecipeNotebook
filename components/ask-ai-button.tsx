@@ -222,7 +222,12 @@ export function AskAIButton({
           <Spinner />
         </Button>
       ) : isClicked ? (
-        <div className="flex flex-col items-end gap-3">
+        <div className="flex flex-col items-end gap-3 m-width-[280px]">
+            <div className="bg-white p-2"><p>
+            Press ⌘ + I to create an inline prompt
+            <br />
+            at the cursor position.
+          </p></div>
           <textarea
             rows={1}
             placeholder="Write prompt"

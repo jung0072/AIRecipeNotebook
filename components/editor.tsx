@@ -35,6 +35,8 @@ const Editor = ({ onChange, initialData, editable }: EditorProps) => {
   const [matchedBlockIds, setMatchedBlockIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [confirmModal, setConfirmModal] = useState<boolean>(false);
+  const [currentBlockContentMD, setCurrentBlockContentMD] =
+    useState<string>("");
 
   const handleUpload = async (file: File) => {
     const response = await edgestore.publicFiles.upload({
@@ -55,13 +57,7 @@ const Editor = ({ onChange, initialData, editable }: EditorProps) => {
     uploadFile: handleUpload,
   });
 
-  const textCursorPosition = editor.getTextCursorPosition();
-
   const handleEnter = async () => {
-    const currentBlockContentMD = await editor.blocksToMarkdown([
-      textCursorPosition.block,
-    ]);
-
     setIsLoading(true);
 
     modifyRecipe(inputValue, currentBlockContentMD)
@@ -133,9 +129,27 @@ const Editor = ({ onChange, initialData, editable }: EditorProps) => {
     setShowModal(false);
   };
 
+  const getMDOfCurrentCursorBlock = () => {
+    const textCursorPosition = editor.getTextCursorPosition();
+
+    if (textCursorPosition.block.content) {
+      if (
+        textCursorPosition.block.content &&
+        textCursorPosition.block.content[0].type === "text"
+      ) {
+        console.log(
+          "Set currentBlockContentMD to ",
+          textCursorPosition.block.content[0].text
+        );
+        setCurrentBlockContentMD(textCursorPosition.block.content[0].text);
+      }
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.metaKey && event.key === "i") {
+        getMDOfCurrentCursorBlock();
         setShowModal(true);
       }
     };
@@ -204,8 +218,12 @@ const Editor = ({ onChange, initialData, editable }: EditorProps) => {
       ></BlockNoteView>
       <AskAIButton onChange={onChange} editor={editor} title={title} />
       {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed bottom-3 right-7 flex items-center justify-center bg-opacity-50 border z-999 max-w-md rounded-md">
           <div className="bg-white p-4 rounded-md flex flex-col gap-3">
+            <h1 className="text-xl font-bold">
+              Write a prompt for the text below and click enter
+            </h1>
+            <p>{currentBlockContentMD}</p>
             <textarea
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
@@ -224,17 +242,17 @@ const Editor = ({ onChange, initialData, editable }: EditorProps) => {
               </div>
             ) : (
               <div className="flex justify-end gap-3">
-                <Button onClick={handleEnter} variant="default">
-                  Enter
-                </Button>
                 <Button onClick={handleCancel} variant="destructive">
                   Cancel
+                </Button>
+                <Button onClick={handleEnter} variant="default">
+                  Enter
                 </Button>
               </div>
             )}
             {isLoading && (
               <div className="flex justify-end gap-3">
-                <Button variant="outline" >
+                <Button variant="outline">
                   <span>Generating...</span>
                   <Spinner />
                 </Button>
